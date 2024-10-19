@@ -13,15 +13,15 @@ if not os.path.exists("music"):
 
 # 搜索歌曲并匹配输入的歌名和歌手
 def search_and_download(query, song_info):
-    query.replace(" / ", "&")
-    query.replace(" ", "%20")  # URL 编码
+    query = query.replace(" / ", "&")
     search_url = f"https://cdn.crashmc.com/https://www.gequbao.com/s/{query}"
     retries = 5
     for attempt in range(retries):
         try:
             time.sleep(1)  # 添加延迟以避免请求过于频繁
             response = requests.get(search_url)
-            print(f"搜索 URL: {search_url}")
+            log_search_url = search_url.replace(" ", "%20")
+            print(f"搜索 URL: {log_search_url}")
             if response.status_code == 200:
                 html_content = response.text
                 soup = BeautifulSoup(html_content, 'html.parser')
@@ -54,12 +54,12 @@ def search_and_download(query, song_info):
                     download_song(title, artist, href)
                     return  # 下载成功后结束函数
                 else:
-                    print(f"未找到匹配的: {song_info} | {query}")
+                    print(f"未找到匹配的: {song_info}")
                     with open('musicdl.txt', 'a') as log_file:
                         log_file.write(f"未找到匹配的: {song_info}\n")
                     return
             else:
-                print("搜索失败")
+                print(f"搜索失败，状态码：{response.status_code}")
         except Exception as e:
             print(f"搜索错误：{e}")
         time.sleep(1)  # 每次重试前的延迟
@@ -97,6 +97,8 @@ def download_song(title, artist, href):
                         return
                 else:
                     print("未找到 play-id")
+            else:
+                print(f"未找到歌曲信息，状态码：{response.status_code}" )
         except Exception as e:
             print(f"下载错误：{e}")
         time.sleep(1)  # 每次重试前的延迟
@@ -144,21 +146,6 @@ def download_to_folder(download_url, file_path):
                 else:
                     print(f"歌曲下载成功: {file_path}")
                     return True  # 下载成功
-                
-                
-                # 检查文件大小是否小于 10KB
-                if os.path.getsize(file_path) < 10 * 1024:
-                    print(f"文件过小，重新尝试下载: {file_path}")
-                    os.remove(file_path)  # 删除无效的小文件
-                    return False  # 返回 False 以指示需要重新下载
-                return True  # 下载成功后返回 True
-
-                # 检查文件大小是否小于 10KB
-                if os.path.getsize(file_path) < 10 * 1024:
-                    print(f"文件过小，重新尝试下载: {file_path}")
-                    os.remove(file_path)  # 删除无效的小文件
-                    return False  # 返回 False 以指示需要重新下载
-                return True  # 下载成功后返回 True
             else:
                 print(f"下载失败，状态码: {response.status_code}")
         except Exception as e:
@@ -181,7 +168,7 @@ def start_batch_download():
             song = song.strip()
             if song:
                 query = song
-                print(f"搜索 {song}")
+                print(f"- 搜索 {song}")
                 search_and_download(query, song)
 
         print("下载完成")
