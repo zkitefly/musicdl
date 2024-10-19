@@ -61,8 +61,8 @@ def search_and_download(query, song_info, status_label, result_list):
             print(f"搜索错误：{e}")
         time.sleep(2)  # 每次重试前的延迟
 
-# 获取歌曲下载链接并下载歌曲
-def download_song(title, artist, href, result_list, status_label):
+# 修改 download_song 函数以处理小文件的重新下载
+def download_song(title, artist, href):
     song_url = f"https://cdn.crashmc.com/https://www.gequbao.com{href}"
     retries = 3
     for attempt in range(retries):
@@ -78,20 +78,28 @@ def download_song(title, artist, href, result_list, status_label):
                     download_url = get_download_link(play_id)
                     if download_url:
                         # 下载歌曲
-                        download_to_folder(download_url, f"music/{title} - {artist}.mp3")
-                        status_label.config(text=f"下载完成: {title} - {artist}")
+                        file_path = f"music/{title} - {artist}.mp3"
+                        success = download_to_folder(download_url, file_path)
+                        
+                        # 如果下载失败或文件太小，重新获取下载链接并重试
+                        if not success:
+                            print(f"重新获取下载链接并尝试下载: {title} - {artist}")
+                            download_url = get_download_link(play_id)
+                            if download_url:
+                                download_to_folder(download_url, file_path)
+
+                        print(f"下载完成: {title} - {artist}")
                         with open('musicdl.txt', 'a') as log_file:
                             log_file.write(f"下载成功: {title} - {artist}\n")
                         return  # 下载成功后结束函数
                     else:
-                        status_label.config(text=f"无法获取下载链接: {title} - {artist}")
+                        print(f"无法获取下载链接: {title} - {artist}")
                         with open('musicdl.txt', 'a') as log_file:
                             log_file.write(f"无法获取下载链接: {title} - {artist}\n")
                         return
                 else:
-                    status_label.config(text="未找到 play-id")
+                    print("未找到 play-id")
         except Exception as e:
-            status_label.config(text=f"下载错误: {e}")
             print(f"下载错误：{e}")
         time.sleep(2)  # 每次重试前的延迟
 
@@ -117,6 +125,7 @@ def get_download_link(play_id):
 
 # 下载歌曲文件
 def download_to_folder(download_url, file_path):
+    download_url = "https://cdn.crashmc.com/" + download_url
     retries = 3
     for attempt in range(retries):
         try:

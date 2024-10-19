@@ -57,7 +57,7 @@ def search_and_download(query, song_info):
             print(f"搜索错误：{e}")
         time.sleep(2)  # 每次重试前的延迟
 
-# 获取歌曲下载链接并下载歌曲
+# 修改 download_song 函数以处理小文件的重新下载
 def download_song(title, artist, href):
     song_url = f"https://cdn.crashmc.com/https://www.gequbao.com{href}"
     retries = 3
@@ -74,7 +74,16 @@ def download_song(title, artist, href):
                     download_url = get_download_link(play_id)
                     if download_url:
                         # 下载歌曲
-                        download_to_folder(download_url, f"music/{title} - {artist}.mp3")
+                        file_path = f"music/{title} - {artist}.mp3"
+                        success = download_to_folder(download_url, file_path)
+                        
+                        # 如果下载失败或文件太小，重新获取下载链接并重试
+                        if not success:
+                            print(f"重新获取下载链接并尝试下载: {title} - {artist}")
+                            download_url = get_download_link(play_id)
+                            if download_url:
+                                download_to_folder(download_url, file_path)
+
                         print(f"下载完成: {title} - {artist}")
                         with open('musicdl.txt', 'a') as log_file:
                             log_file.write(f"下载成功: {title} - {artist}\n")
@@ -112,6 +121,7 @@ def get_download_link(play_id):
 
 # 下载歌曲文件
 def download_to_folder(download_url, file_path):
+    download_url = "https://cdn.crashmc.com/" + download_url
     retries = 3
     for attempt in range(retries):
         try:
@@ -124,12 +134,19 @@ def download_to_folder(download_url, file_path):
                         if chunk:
                             f.write(chunk)
                 print(f"歌曲下载成功: {file_path}")
-                return  # 下载成功后结束函数
+                
+                # 检查文件大小是否小于 10KB
+                if os.path.getsize(file_path) < 10 * 1024:
+                    print(f"文件过小，重新尝试下载: {file_path}")
+                    os.remove(file_path)  # 删除无效的小文件
+                    return False  # 返回 False 以指示需要重新下载
+                return True  # 下载成功后返回 True
             else:
                 print(f"下载失败，状态码: {response.status_code}")
         except Exception as e:
             print(f"下载文件时出错: {e}")
         time.sleep(2)  # 每次重试前的延迟
+    return False  # 如果所有重试都失败，返回 False
 
 # 读取 music.txt 并开始批量下载
 def start_batch_download():

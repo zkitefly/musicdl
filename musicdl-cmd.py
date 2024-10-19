@@ -80,6 +80,7 @@ def get_download_link(play_id):
 
 # 下载歌曲
 def download_song(download_url, file_name):
+    download_url = "https://cdn.crashmc.com/" + download_url
     try:
         response = requests.get(download_url, stream=True)
         if response.status_code == 200:
